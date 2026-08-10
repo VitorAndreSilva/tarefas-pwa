@@ -20,30 +20,40 @@
       </button>
     </div>
 
-    <div v-if="editingTask" class="image-section">
+    <div class="image-section">
       <img
-        v-if="previewUrl || editingTask.img_url"
-        :src="previewUrl || editingTask.img_url"
+        v-if="previewUrl || editingTask?.img_url"
+        :src="previewUrl || editingTask?.img_url"
         class="image-preview"
         alt="Imagem da tarefa"
       />
-      <label class="image-label" :class="{ disabled: uploading }">
-        <span v-if="uploading" class="upload-status">Enviando...</span>
-        <span v-else>
-          {{ previewUrl || editingTask.img_url
-            ? 'Trocar imagem'
-            : 'Adicionar imagem'
-          }}
-        </span>
-        <input
-          type="file"
-          accept="image/jpeg,image/png"
-          capture="environment"
-          class="image-input"
-          :disabled="uploading"
-          @change="handleImageChange"
-        />
-      </label>
+      <div v-if="editingTask">
+        <label class="image-label" :class="{ disabled: uploading }">
+          <span v-if="uploading" class="upload-status">Enviando...</span>
+          <span v-else>Adicionar imagem</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png"
+            capture="environment"
+            class="image-input"
+            :disabled="uploading"
+            @change="handleImageChange"
+          />
+        </label>
+
+        <button
+          type="button"
+          class="task-button-secondary"
+          @click="showCameraCapture = !showCameraCapture"
+        >
+          {{ showCameraCapture ? 'Fechar câmera' : 'Abrir preview ao vivo' }}
+        </button>
+      </div>
+
+      <CameraCapture
+        v-if="showCameraCapture"
+        @captured="handleCameraCapture"
+      />
     </div>
   </form>
 </template>
@@ -51,6 +61,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import tasksApi from '../api/tasksApi.js'
+import CameraCapture from './CameraCapture.vue'
 
 const props = defineProps({
   editingTask: {
@@ -64,6 +75,7 @@ const newTask = ref('')
 const previewUrl = ref(null)
 const imgAttachmentKey = ref(null)
 const uploading = ref(false)
+const showCameraCapture = ref(false)
 
 watch(
   () => props.editingTask,
@@ -74,6 +86,23 @@ watch(
     imgAttachmentKey.value = null;
   },
 );
+
+function handleCameraCapture(file) {
+  previewUrl.value = URL.createObjectURL(file);
+  uploading.value = true;
+  tasksApi
+    .uploadImage(file)
+    .then((response) => {
+      imgAttachmentKey.value = response.data.attachment_key;
+    })
+    .catch((err) => {
+      console.error(err);
+      previewUrl.value = null;
+    })
+    .finally(() => {
+      uploading.value = false;
+    });
+}
 
 async function handleImageChange(event) {
   const file = event.target.files[0]
@@ -170,7 +199,7 @@ function handleCancel() {
 .task-button-cancel {
   padding: 12px 16px;
   background-color: transparent;
-  color: #666;
+  color: #667;
   border: 2px solid #ddd;
   border-radius: 8px;
   font-size: 1rem;
@@ -180,6 +209,25 @@ function handleCancel() {
 
 .task-button-cancel:hover {
   border-color: #aaa;
+}
+
+.task-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #4a90d9;
+  border: 1.5px solid #4a90d9;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin: 5px
+}
+
+.task-button-secondary:hover {
+  background-color: #3e79b9;
 }
 
 .image-section {
