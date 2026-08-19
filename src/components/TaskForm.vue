@@ -55,6 +55,7 @@
         @captured="handleCameraCapture"
       />
     </div>
+    <TaskLocationMap />
   </form>
 </template>
 
@@ -62,6 +63,7 @@
 import { ref, watch } from 'vue'
 import tasksApi from '../api/tasksApi.js'
 import CameraCapture from './CameraCapture.vue'
+import TaskLocationMap from './TaskLocationMap.vue'
 
 const props = defineProps({
   editingTask: {
@@ -148,6 +150,22 @@ function handleCancel() {
   previewUrl.value = null
   imgAttachmentKey.value = null
   emit('cancel')
+}
+
+async function handleGetLocation() {
+  const captured = await requestCurrentLocation()
+  if (!captured) return
+
+  try {
+    const address = await geocodingApi.reverse(
+      captured.latitude,
+      captured.longitude,
+    )
+    setLocationLabel(address?.label)
+  } catch {
+    locationError.value =
+      'Localização obtida, mas não foi possível identificar a rua.'
+  }
 }
 </script>
 
