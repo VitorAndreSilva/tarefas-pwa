@@ -61,7 +61,7 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  async function updateTask(id, { title, imgAttachmentKey } = {}) {
+  async function updateTask(id, { title, imgAttachmentKey, latitude, longitude } = {}) {
     error.value = null;
 
     const payload = {};
@@ -73,6 +73,14 @@ export const useTasksStore = defineStore('tasks', () => {
 
     if (imgAttachmentKey != null) {
       payload.img_attachment_key = imgAttachmentKey;
+    }
+
+    if (latitude != null) {
+      payload.latitude = latitude
+    }
+
+    if (longitude != null) {
+      payload.longitude = longitude
     }
 
     if (Object.keys(payload).length === 0) return;

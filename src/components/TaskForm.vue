@@ -20,14 +20,14 @@
       </button>
     </div>
 
-    <div class="image-section">
+    <div class="image-section" v-if="editingTask">
       <img
         v-if="previewUrl || editingTask?.img_url"
         :src="previewUrl || editingTask?.img_url"
         class="image-preview"
         alt="Imagem da tarefa"
       />
-      <div v-if="editingTask">
+      <div>
         <label class="image-label" :class="{ disabled: uploading }">
           <span v-if="uploading" class="upload-status">Enviando...</span>
           <span v-else>Adicionar imagem</span>
@@ -55,16 +55,27 @@
         @captured="handleCameraCapture"
       />
     </div>
-    <TaskLocationMap />
+
+    <div class="location-section" v-if="location && editingTask">
+      <div class="location-data">
+        <p>Latitude: {{ location.latitude }}</p>
+        <p>Longitude: {{ location.longitude }}</p>
+      </div>
+    </div>
+    <div>
+      <button type="button" v-if="!location" @click="handleGetLocation" class="get-location">Obter localização</button>
+      <TaskLocationMap :location="location" />
+    </div>
   </form>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
 import tasksApi from '../api/tasksApi.js'
+import geocodingApi from '../api/geocodingApi.js'
 import CameraCapture from './CameraCapture.vue'
 import TaskLocationMap from './TaskLocationMap.vue'
-
+import { useGeolocation } from '../composables/useGeolocation.js'
 const props = defineProps({
   editingTask: {
     type: Object,
@@ -78,11 +89,17 @@ const previewUrl = ref(null)
 const imgAttachmentKey = ref(null)
 const uploading = ref(false)
 const showCameraCapture = ref(false)
+const { locationError, location, setLocationFromTask, requestCurrentLocation, clearLocation, setLocationLabel } = useGeolocation()
 
 watch(
   () => props.editingTask,
   (task) => {
     newTask.value = task ? task.title : '';
+    if (task) {
+      setLocationFromTask(task);
+    } else {
+      clearLocation();
+    }
     if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
     previewUrl.value = null;
     imgAttachmentKey.value = null;
@@ -130,6 +147,8 @@ function handleSubmit() {
   const payload = {
     title: newTask.value.trim(),
     imgAttachmentKey: imgAttachmentKey.value,
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
   };
 
   if (props.editingTask) {
@@ -154,7 +173,10 @@ function handleCancel() {
 
 async function handleGetLocation() {
   const captured = await requestCurrentLocation()
-  if (!captured) return
+  console.log(captured)
+  if (!captured) {
+    console.log("Erro ao localizar")
+  }
 
   try {
     const address = await geocodingApi.reverse(
@@ -303,5 +325,27 @@ async function handleGetLocation() {
   color: #999;
   margin: 0;
   flex-basis: 100%;
+}
+
+.get-location {
+  padding: 12px 20px;
+  margin-top: 10px;
+  background-color: #4a90d9;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.location-section {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #ccc;
 }
 </style>
