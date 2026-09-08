@@ -104,6 +104,7 @@ watch(
     previewUrl.value = null;
     imgAttachmentKey.value = null;
   },
+  { immediate: true },
 );
 
 function handleCameraCapture(file) {
@@ -147,8 +148,8 @@ function handleSubmit() {
   const payload = {
     title: newTask.value.trim(),
     imgAttachmentKey: imgAttachmentKey.value,
-    latitude: location?.latitude ?? null,
-    longitude: location?.longitude ?? null,
+    latitude: location.value?.latitude ?? props.editingTask?.latitude ?? null,
+    longitude: location.value?.longitude ?? props.editingTask?.longitude ?? null,
   };
 
   if (props.editingTask) {
@@ -173,9 +174,8 @@ function handleCancel() {
 
 async function handleGetLocation() {
   const captured = await requestCurrentLocation()
-  console.log(captured)
   if (!captured) {
-    console.log("Erro ao localizar")
+    return
   }
 
   try {

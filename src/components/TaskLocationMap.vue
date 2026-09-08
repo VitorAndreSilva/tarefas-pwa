@@ -17,7 +17,7 @@ L.Icon.Default.mergeOptions({
 })
 
 const props = defineProps({
-  location: { type: Object, required: true },
+  location: { type: Object, required: false, default: null },
 })
 
 const mapElement = ref(null)

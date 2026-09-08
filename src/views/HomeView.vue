@@ -59,12 +59,12 @@ onMounted(() => {
   store.fetchTasks()
 })
 
-function handleAdd(payload) {
-  store.addTask(payload);
+async function handleAdd(payload) {
+  await store.addTask(payload);
 }
 
-function handleUpdate(id, payload) {
-  store.updateTask(id, payload )
+async function handleUpdate(id, payload) {
+  await store.updateTask(id, payload)
   editingTask.value = null
 }
 

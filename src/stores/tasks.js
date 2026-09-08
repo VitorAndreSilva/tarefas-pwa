@@ -24,12 +24,37 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  async function addTask(payload) {
-    if (!payload.title?.trim()) return;
+  async function addTask({ title, imgAttachmentKey, latitude, longitude } = {}) {
+    const trimmedTitle = title?.trim();
+    if (!trimmedTitle) return;
+
     error.value = null;
+
+    const payload = {
+      title: trimmedTitle,
+    };
+
+    if (imgAttachmentKey != null) {
+      payload.img_attachment_key = imgAttachmentKey;
+    }
+
+    if (latitude != null) {
+      payload.latitude = latitude;
+    }
+
+    if (longitude != null) {
+      payload.longitude = longitude;
+    }
+
     try {
-      const response = await tasksApi.create(payload.title)
-      tasks.value.push(response.data)
+      const response = await tasksApi.create(payload)
+      const created = response.data
+      // fallback: if backend didn't return latitude/longitude, keep local payload
+      if ((created.latitude == null || created.longitude == null) && (payload.latitude != null || payload.longitude != null)) {
+        tasks.value.push({ ...created, latitude: payload.latitude ?? created.latitude, longitude: payload.longitude ?? created.longitude })
+      } else {
+        tasks.value.push(created)
+      }
     } catch (err) {
       error.value = 'Erro ao adicionar tarefa.'
       console.error(err)
@@ -87,8 +112,18 @@ export const useTasksStore = defineStore('tasks', () => {
 
     try {
       const response = await tasksApi.update(id, payload);
+      const responseData = response.data
       const index = tasks.value.findIndex((t) => t.id === id);
-      if (index !== -1) tasks.value[index] = response.data;
+      if (index !== -1) {
+        const updated = responseData
+        // fallback: preserve lat/lon from payload if backend didn't return them
+        const merged = {
+          ...updated,
+          latitude: updated.latitude ?? payload.latitude ?? tasks.value[index].latitude,
+          longitude: updated.longitude ?? payload.longitude ?? tasks.value[index].longitude,
+        }
+        tasks.value[index] = merged
+      }
     } catch (err) {
       error.value = 'Erro ao editar tarefa.';
       console.error(err);
